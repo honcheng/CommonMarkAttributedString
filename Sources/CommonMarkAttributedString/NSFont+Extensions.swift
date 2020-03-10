@@ -5,6 +5,15 @@ import class AppKit.NSFontDescriptor
 
 
 extension NSFont {
+    
+    func withSymbolicTraits(_ traits: NSFontDescriptor.SymbolicTraits) -> NSFont? {
+        guard let familyName = self.familyName else {
+            return nil
+        }
+        let fontDescriptor = NSFontDescriptor(fontAttributes: [.family: familyName]).withSymbolicTraits(traits)
+        return NSFont(descriptor: fontDescriptor, size: pointSize)
+    }
+    
     func addingSymbolicTraits(_ traits: NSFontDescriptor.SymbolicTraits) -> NSFont? {
         var symbolicTraits = fontDescriptor.symbolicTraits
         symbolicTraits.insert(traits)

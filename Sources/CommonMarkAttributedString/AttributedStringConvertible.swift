@@ -197,7 +197,7 @@ extension Strong {
         var attributes = attributes
 
         let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-        attributes[.font] = font.addingSymbolicTraits(.bold)
+        attributes[.font] = font.withSymbolicTraits(.bold)
 
         return attributes
     }
