@@ -227,7 +227,7 @@ extension Strong {
         attributes[.font] = font.addingSymbolicTraits(.traitBold)
         #elseif canImport(AppKit)
         let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-        attributes[.font] = font.addingSymbolicTraits(.bold)
+        attributes[.font] = font.withSymbolicTraits(.bold)
         #endif
 
         return attributes
