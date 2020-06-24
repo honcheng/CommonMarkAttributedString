@@ -1,8 +1,9 @@
-#if canImport(AppKit)
+import Foundation
+import struct CoreGraphics.CGFloat
 
+#if canImport(AppKit) && !canImport(UIKit)
 import class AppKit.NSFont
 import class AppKit.NSFontDescriptor
-
 
 extension NSFont {
     
@@ -29,5 +30,4 @@ extension NSFont {
         return NSFont(descriptor: fontDescriptor, size: pointSize)
     }
 }
-
 #endif
