@@ -5,13 +5,18 @@ import PackageDescription
 
 let package = Package(
     name: "CommonMarkAttributedString",
+    platforms: [
+        .macOS(.v10_10),
+        .iOS(.v9),
+        .tvOS(.v9)
+    ],
     products: [
         .library(
             name: "CommonMarkAttributedString",
             targets: ["CommonMarkAttributedString"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/SwiftDocOrg/CommonMark.git", from: "0.2.2"),
+        .package(url: "https://github.com/SwiftDocOrg/CommonMark.git", .upToNextMinor(from: "0.2.2")),
     ],
     targets: [
         .target(

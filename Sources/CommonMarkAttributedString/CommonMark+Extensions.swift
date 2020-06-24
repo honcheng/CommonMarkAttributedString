@@ -1,15 +1,16 @@
+import CommonMark
 import Foundation
+import class Foundation.NSAttributedString
+import struct CoreGraphics.CGFloat
 
 #if canImport(UIKit)
+import class UIKit.UIFont
 import class UIKit.NSTextAttachment
 #elseif canImport(AppKit)
+import class AppKit.NSFont
 import class AppKit.NSTextAttachment
+import class AppKit.NSTextList
 #endif
-
-protocol AttributedStringConvertible {
-    func attributes(with attributes: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any]
-    func attributedString(attributes: [NSAttributedString.Key: Any], attachments: [String: NSTextAttachment]) throws -> NSAttributedString
-}
 
 // MARK: -
 
@@ -31,14 +32,14 @@ extension Node: AttributedStringConvertible {
         case let container as ContainerOfBlocks:
             guard !container.children.contains(where: { $0 is HTMLBlock }) else {
                 let html = try Document(container.description).render(format: .html)
-                return NSAttributedString(html: html, attributes: attributes) ?? NSAttributedString()
+                return try NSAttributedString(html: html, attributes: attributes) ?? NSAttributedString()
             }
 
             return try container.children.map { try $0.attributedString(attributes: attributes, attachments: attachments) }.joined(separator: "\u{2029}")
         case let container as ContainerOfInlineElements:
             guard !container.children.contains(where: { $0 is HTML }) else {
                 let html = try Document(container.description).render(format: .html)
-                return NSAttributedString(html: html, attributes: attributes) ?? NSAttributedString()
+                return try NSAttributedString(html: html, attributes: attributes) ?? NSAttributedString()
             }
 
             return try container.children.map { try $0.attributedString(attributes: attributes, attachments: attachments) }.joined()
@@ -56,8 +57,13 @@ extension BlockQuote {
     override func attributes(with attributes: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
         var attributes = attributes
 
+        #if canImport(UIKit)
+        let font = attributes[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: .body)
+        attributes[.font] = font.addingSymbolicTraits(.traitItalic)
+        #elseif canImport(AppKit)
         let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
         attributes[.font] = font.addingSymbolicTraits(.italic)
+        #endif
 
         return attributes
     }
@@ -67,8 +73,13 @@ extension CodeBlock {
     override func attributes(with attributes: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
         var attributes = attributes
 
+        #if canImport(UIKit)
+        let font = attributes[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: .body)
+        attributes[.font] = font.monospaced
+        #elseif canImport(AppKit)
         let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
         attributes[.font] = font.monospaced
+        #endif
 
         return attributes
     }
@@ -91,9 +102,13 @@ extension Heading {
     override func attributes(with attributes: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
         var attributes = attributes
 
+        #if canImport(UIKit)
+        let font = attributes[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: .body)
+        attributes[.font] = UIFont(name: font.fontName, size: font.pointSize * fontSizeMultiplier)?.addingSymbolicTraits(.traitBold)
+        #elseif canImport(AppKit)
         let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-
         attributes[.font] = NSFont(name: font.fontName, size: font.pointSize * fontSizeMultiplier)?.addingSymbolicTraits(.bold)
+        #endif
 
         return attributes
     }
@@ -117,7 +132,8 @@ extension List.Item {
     // TODO: Represent lists with NSTextList on macOS
     fileprivate func attributedString(in list: List, at position: Int, attributes: [NSAttributedString.Key: Any], attachments: [String: NSTextAttachment]) throws -> NSAttributedString {
 
-        let delimiter: String
+        var delimiter: String = list.kind == .ordered ? "\(position + 1)." : "•"
+        #if os(macOS) && canImport(AppKit)
         if #available(OSX 10.13, *) {
             let format: NSTextList.MarkerFormat
             switch (list.kind, list.markerLevel) {
@@ -130,9 +146,8 @@ extension List.Item {
             }
 
             delimiter = NSTextList(markerFormat: format, options: 0).marker(forItemNumber: position + 1)
-        } else {
-            delimiter = list.kind == .ordered ? "\(position + 1)." : "•"
         }
+        #endif
 
         let indentation = String(repeating: "\t", count: list.nestingLevel)
 
@@ -148,8 +163,13 @@ extension Code {
     override func attributes(with attributes: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
         var attributes = attributes
 
+        #if canImport(UIKit)
+        let font = attributes[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: .body)
+        attributes[.font] = font.monospaced
+        #elseif canImport(AppKit)
         let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
         attributes[.font] = font.monospaced
+        #endif
 
         return attributes
     }
@@ -159,8 +179,14 @@ extension Emphasis {
     override func attributes(with attributes: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
         var attributes = attributes
 
+        #if canImport(UIKit)
+        let font = attributes[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: .body)
+        attributes[.font] = font.addingSymbolicTraits(.traitItalic)
+        #elseif canImport(AppKit)
         let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
         attributes[.font] = font.addingSymbolicTraits(.italic)
+        #endif
+        
 
         return attributes
     }
@@ -182,9 +208,11 @@ extension Link {
             attributes[.link] = url
         }
 
+        #if os(macOS) && canImport(AppKit)
         if let title = title {
             attributes[.toolTip] = title
         }
+        #endif
 
         return attributes
     }
@@ -194,8 +222,13 @@ extension Strong {
     override func attributes(with attributes: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
         var attributes = attributes
 
+        #if canImport(UIKit)
+        let font = attributes[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: .body)
+        attributes[.font] = font.addingSymbolicTraits(.traitBold)
+        #elseif canImport(AppKit)
         let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-        attributes[.font] = font.withSymbolicTraits(.bold)
+        attributes[.font] = font.addingSymbolicTraits(.bold)
+        #endif
 
         return attributes
     }
@@ -206,4 +239,3 @@ extension Text {
         return NSAttributedString(string: literal ?? "", attributes: attributes)
     }
 }
-
